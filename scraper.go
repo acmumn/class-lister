@@ -62,6 +62,9 @@ func getCourses() []Course {
 			startTime := timeLocData[1]
 			days := timeLocData[2]
 			room := timeLocData[3]
+			if room == "(online)" {
+				return
+			}
 			instructor := unfuck(e.Find(":nth-child(4)"))
 
 			c := &courses[len(courses)-1]

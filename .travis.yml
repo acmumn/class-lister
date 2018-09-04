@@ -1,0 +1,22 @@
+language: go
+sudo: false
+go:
+  - 1.9
+git:
+  depth: 1
+install: true
+notifications:
+  email: false
+
+script:
+  - go build -v
+
+deploy:
+- provider: github
+  api_key: $AUTH_TOKEN
+  skip_cleanup: true
+  file:
+    - class-lister
+  on:
+    tags: true
+    condition: $TRAVIS_OS_NAME = linux

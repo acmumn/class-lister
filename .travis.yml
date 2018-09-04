@@ -12,7 +12,7 @@ script:
   - go build -v
 
 deploy:
-- provider: github
+- provider: releases
   api_key: $AUTH_TOKEN
   skip_cleanup: true
   file:

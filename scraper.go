@@ -24,8 +24,8 @@ type Lecture struct {
 	Professor string
 }
 
-func getCourses() []Course {
-	courseResp, err := http.Get("https://www.aem.umn.edu/cgi-bin/courses/noauth/class-schedule?current=CSCI")
+func getCourses(dept string) []Course {
+	courseResp, err := http.Get("https://www.aem.umn.edu/cgi-bin/courses/noauth/class-schedule?current=" + dept)
 	must(err)
 	doc, err := goquery.NewDocumentFromResponse(courseResp)
 	must(err)

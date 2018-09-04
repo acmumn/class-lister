@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 		} else if err != nil {
 			must(err)
 		}
-		depts = append(depts, s)
+		depts = append(depts, strings.TrimSpace(s))
 	}
 
 	var courses []Course

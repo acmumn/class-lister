@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
-var courseNumRegex = regexp.MustCompile("[0-9]{4}")
+var courseNumRegex = regexp.MustCompile("[0-9]{3,4}")
 var timeLocRegex = regexp.MustCompile("([0-9:]{5} [AP]M)-[0-9:]{5} [AP]M ([^ ]+) (.+)")
 
 type Course struct {
@@ -39,11 +40,15 @@ func getCourses(dept string) []Course {
 		children := e.Children()
 		childCount := children.Length()
 		if childCount == 1 {
-			courseNum, err := strconv.Atoi(courseNumRegex.FindStringSubmatch(children.Find("b").Text())[0])
-			must(err)
-			if courseNum >= 5000 {
-				return
+			courseNumMatches := courseNumRegex.FindStringSubmatch(children.Find("b").Text())
+			if len(courseNumMatches) == 0 {
+				log.Println("Warning: Couldn't find course number")
+				html, _ := e.Html()
+				log.Println("    ", dept)
+				log.Println("    ", html)
 			}
+			courseNum, err := strconv.Atoi(courseNumMatches[0])
+			must(err)
 			courses = append(courses, Course{
 				Number:   courseNum,
 				Lectures: nil,
@@ -53,19 +58,28 @@ func getCourses(dept string) []Course {
 			if classType != "Lecture" {
 				return
 			}
-			timeLocStr := unfuck(e.Find(":nth-child(3)"))
+			timeLocStr := strings.TrimSpace(unfuck(e.Find(":nth-child(3)")))
+			if timeLocStr == "" || strings.Contains(timeLocStr, "(online)") {
+				return
+			}
 			timeLocData := timeLocRegex.FindStringSubmatch(timeLocStr)
 			if timeLocData == nil {
-				log.Println("Warning: Couldn't parse ", timeLocStr)
+				log.Printf("Warning: Couldn't parse %#v", timeLocStr)
+				html, _ := e.Html()
+				log.Println("    ", dept)
+				log.Println("    ", html)
 				return
 			}
 			startTime := timeLocData[1]
 			days := timeLocData[2]
 			room := timeLocData[3]
-			if room == "(online)" {
+			instructor := unfuck(e.Find(":nth-child(4)"))
+
+			if len(courses) == 0 {
+				log.Println("Something screwy is going on with the page...")
+				log.Printf("Check on the dept %#v", dept)
 				return
 			}
-			instructor := unfuck(e.Find(":nth-child(4)"))
 
 			c := &courses[len(courses)-1]
 			c.Lectures = append(c.Lectures, Lecture{
@@ -75,7 +89,10 @@ func getCourses(dept string) []Course {
 				Professor: instructor,
 			})
 		} else {
-			panic("TODO")
+			log.Println("Warning: Unrecognized row")
+			html, _ := e.Html()
+			log.Println("    ", dept)
+			log.Println("    ", html)
 		}
 	})
 	return courses
